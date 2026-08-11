@@ -1,0 +1,55 @@
+name: Build dummy driver
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'driver/**'
+      - '.github/workflows/build-driver.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore WDK NuGet packages
+        run: nuget restore driver\packages.config -PackagesDirectory driver\packages
+
+      - name: Build driver
+        run: msbuild driver\DummyDriver\DummyDriver.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Verify sys is a valid unsigned PE binary
+        shell: pwsh
+        run: |
+          $sys = Get-ChildItem driver -Recurse -Filter DummyDriver.sys |
+                 Where-Object { $_.FullName -notmatch '\\packages\\' } |
+                 Select-Object -First 1
+          if (-not $sys) { Write-Error "DummyDriver.sys not found"; exit 1 }
+          Write-Host "Found: $($sys.FullName)"
+
+          # Check the PE magic bytes ("MZ")
+          $bytes = [System.IO.File]::ReadAllBytes($sys.FullName)[0..1]
+          $magic = [System.Text.Encoding]::ASCII.GetString($bytes)
+          if ($magic -ne "MZ") { Write-Error "not a valid PE file"; exit 1 }
+
+          # Confirm it is unsigned, ready for local signing
+          $sig = Get-AuthenticodeSignature $sys.FullName
+          Write-Host "Signature status: $($sig.Status)"
+          if ($sig.Status -eq "Valid") { Write-Error "expected an unsigned binary"; exit 1 }
+
+          New-Item -ItemType Directory -Force staging | Out-Null
+          Copy-Item $sys.FullName staging\DummyDriver.sys
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummyDriver
+          path: staging/DummyDriver.sys
+          if-no-files-found: error

@@ -40,6 +40,21 @@ code-signing experiments.
   not enough. Sign locally with `codesign` + your provisioning profile,
   `fastlane resign`, or `zsign`.
 
+## Windows kernel driver (sys)
+
+- `driver/DummyDriver` is a minimal WDM "hello world" driver (loads, sets an
+  unload routine, returns success).
+- `.github/workflows/build-driver.yml` builds it on a Windows runner using
+  the [WDK NuGet packages](https://learn.microsoft.com/windows-hardware/drivers/install-the-wdk-using-nuget)
+  (no WDK install needed — the same approach Microsoft's own
+  Windows-Driver-Samples CI uses), with `SignMode=Off` so the resulting
+  `DummyDriver.sys` is unsigned. It verifies the PE magic bytes and that no
+  signature is present, then uploads it as the `DummyDriver` artifact.
+- Sign locally with `signtool sign /fd sha256 ...`. Note that Windows only
+  *loads* kernel drivers signed via Microsoft's attestation/WHQL process (or
+  a test-signed driver on a machine with `bcdedit /set testsigning on`) —
+  but for signing experiments any certificate works.
+
 ## Getting the artifacts
 
 Each workflow runs on pushes to `main` touching its files, or manually via
