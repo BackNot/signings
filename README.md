@@ -26,6 +26,20 @@ code-signing experiments.
   apksigner verify --verbose app-signed.apk
   ```
 
+## iOS ipa
+
+- `ios/` is a minimal SwiftUI app; the Xcode project is generated in CI with
+  [xcodegen](https://github.com/yonaskolb/XcodeGen) from `ios/project.yml`.
+- `.github/workflows/build-ipa.yml` builds the app **unsigned** on a macOS
+  runner (`CODE_SIGNING_ALLOWED=NO`), packages it into
+  `DummyApp-unsigned.ipa` (a zip with a `Payload/` folder), verifies the main
+  binary is a real Mach-O executable, then uploads it as the `DummyApp-ipa`
+  artifact.
+- Unlike the exe/apk, signing an ipa that installs on a device requires an
+  Apple-issued certificate and a provisioning profile — a self-signed cert is
+  not enough. Sign locally with `codesign` + your provisioning profile,
+  `fastlane resign`, or `zsign`.
+
 ## Getting the artifacts
 
 Each workflow runs on pushes to `main` touching its files, or manually via

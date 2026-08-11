@@ -1,0 +1,60 @@
+name: Build dummy ipa
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/build-ipa.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec ios/project.yml --project ios
+
+      - name: Build unsigned app
+        run: >
+          xcodebuild
+          -project ios/DummyApp.xcodeproj
+          -target DummyApp
+          -configuration Release
+          -sdk iphoneos
+          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGN_IDENTITY=""
+          build
+
+      - name: Package unsigned ipa
+        run: |
+          mkdir -p package/Payload
+          cp -R ios/build/Release-iphoneos/DummyApp.app package/Payload/
+          cd package
+          zip -qr DummyApp-unsigned.ipa Payload
+
+      - name: Verify ipa contains a real Mach-O app
+        run: |
+          ipa=package/DummyApp-unsigned.ipa
+          unzip -l "$ipa" | grep -q 'Payload/DummyApp.app/DummyApp'
+          unzip -l "$ipa" | grep -q 'Payload/DummyApp.app/Info.plist'
+
+          # The main binary must be a Mach-O executable for arm64
+          file package/Payload/DummyApp.app/DummyApp | grep -q 'Mach-O'
+
+          ls -la "$ipa"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummyApp-ipa
+          path: package/DummyApp-unsigned.ipa
+          if-no-files-found: error

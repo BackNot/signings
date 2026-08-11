@@ -1,0 +1,20 @@
+name: DummyApp
+options:
+  bundleIdPrefix: eu.codific
+targets:
+  DummyApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [DummyApp]
+    info:
+      path: DummyApp/Info.plist
+      properties:
+        CFBundleDisplayName: DummyApp
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: eu.codific.dummyapp
+        TARGETED_DEVICE_FAMILY: "1"
