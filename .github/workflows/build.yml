@@ -1,0 +1,51 @@
+name: Build dummy exe
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish exe
+        run: >
+          dotnet publish src/DummyApp/DummyApp.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -o out
+
+      - name: Verify exe is a valid PE binary
+        shell: pwsh
+        run: |
+          $exe = "out/DummyApp.exe"
+          if (-not (Test-Path $exe)) { Write-Error "exe not found"; exit 1 }
+
+          # Check the PE magic bytes ("MZ")
+          $bytes = [System.IO.File]::ReadAllBytes($exe)[0..1]
+          $magic = [System.Text.Encoding]::ASCII.GetString($bytes)
+          if ($magic -ne "MZ") { Write-Error "not a valid PE file"; exit 1 }
+
+          # Run it to prove it executes
+          & $exe
+
+          Get-Item $exe | Format-List Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummyApp
+          path: out/DummyApp.exe
+          if-no-files-found: error
