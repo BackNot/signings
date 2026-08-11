@@ -3,6 +3,9 @@ name: Build dummy exe
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:

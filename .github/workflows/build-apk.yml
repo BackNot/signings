@@ -1,0 +1,49 @@
+name: Build dummy apk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build unsigned release APK
+        run: gradle -p android :app:assembleRelease
+
+      - name: Verify apk is a valid package
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ ! -f "$apk" ]; then echo "apk not found"; exit 1; fi
+
+          # A valid APK is a zip containing a manifest and dex code
+          unzip -l "$apk" | grep -q AndroidManifest.xml
+          unzip -l "$apk" | grep -q classes.dex
+
+          ls -la "$apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummyApp-apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error

@@ -1,20 +1,33 @@
 # signings
 
-Dummy repo that builds a valid Windows `.exe` via GitHub Actions, for local
+Dummy repo that builds unsigned binaries via GitHub Actions, for local
 code-signing experiments.
 
-## How it works
+## Windows exe
 
 - `src/DummyApp` is a minimal .NET 8 console app.
-- `.github/workflows/build.yml` runs on every push to `main` (or manually via
-  the **Run workflow** button). It builds a self-contained, single-file
+- `.github/workflows/build.yml` builds a self-contained, single-file
   `DummyApp.exe` on a Windows runner, verifies it is a real PE binary by
-  checking the `MZ` magic bytes and executing it, then uploads it as a build
-  artifact.
+  checking the `MZ` magic bytes and executing it, then uploads it as the
+  `DummyApp` artifact. Sign it locally with `signtool` or `osslsigncode`.
 
-## Getting the exe
+## Android apk
 
-1. Push this repo to GitHub.
-2. Open the **Actions** tab, pick the latest "Build dummy exe" run.
-3. Download the `DummyApp` artifact — it contains `DummyApp.exe`, unsigned and
-   ready for signing (e.g. with `signtool` or `osslsigncode`).
+- `android/` is a minimal Android app (no dependencies, one Activity).
+- `.github/workflows/build-apk.yml` builds an unsigned release APK on an
+  Ubuntu runner, verifies it contains `AndroidManifest.xml` and
+  `classes.dex`, then uploads it as the `DummyApp-apk` artifact.
+- Sign it locally with the Android SDK build tools:
+
+  ```bash
+  keytool -genkeypair -keystore test.jks -alias test -keyalg RSA -validity 365
+  zipalign -p 4 app-release-unsigned.apk app-aligned.apk
+  apksigner sign --ks test.jks --out app-signed.apk app-aligned.apk
+  apksigner verify --verbose app-signed.apk
+  ```
+
+## Getting the artifacts
+
+Each workflow runs on pushes to `main` touching its files, or manually via
+the **Run workflow** button. Open the **Actions** tab, pick the latest run,
+and download the artifact from the run page.
