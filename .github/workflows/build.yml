@@ -47,8 +47,28 @@ jobs:
           Get-Item $exe | Format-List Name, Length
 
       - name: Upload artifact
+        id: mainArtifact
         uses: actions/upload-artifact@v4
         with:
           name: DummyApp
           path: out/DummyApp.exe
+          if-no-files-found: error
+         
+      - name: submit signing request
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 'fe73d942-c95c-4209-9ebb-fa37622c5500'
+          project-slug: 'Project_1'
+          signing-policy-slug: 'policy'
+          github-artifact-id: '${{ steps.mainArtifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'signedartifact'
+          
+      - name: Upload artifact
+        id: uploadSignedArtifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummySignedApp
+          path: signedartifact/DummyApp.exe
           if-no-files-found: error
