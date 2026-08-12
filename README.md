@@ -55,6 +55,26 @@ code-signing experiments.
   a test-signed driver on a machine with `bcdedit /set testsigning on`) —
   but for signing experiments any certificate works.
 
+## Docker image
+
+- `docker/` is a trivial Alpine-based image.
+- `.github/workflows/build-docker.yml` builds it, runs it as a smoke test,
+  uploads it as the `DummyApp-docker` artifact (`dummyapp-image.tar`, load
+  with `docker load -i dummyapp-image.tar`), and also pushes it to
+  `ghcr.io/backnot/dummyapp:1.0.0`.
+- Container signing differs from file signing: the signature is stored in
+  the registry next to the image and refers to its digest, so you sign the
+  pushed image, not a local file:
+
+  ```bash
+  cosign generate-key-pair
+  cosign sign --key cosign.key ghcr.io/backnot/dummyapp@sha256:<digest>
+  cosign verify --key cosign.pub ghcr.io/backnot/dummyapp@sha256:<digest>
+  ```
+
+  The pushed digest is printed in the workflow run summary. (To sign a
+  purely local file instead, `cosign sign-blob` works on the saved tar.)
+
 ## Getting the artifacts
 
 Each workflow runs on pushes to `main` touching its files, or manually via

@@ -1,0 +1,57 @@
+name: Build dummy docker image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/build-docker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/dummyapp" >> "$GITHUB_ENV"
+
+      - name: Build image
+        run: docker build -t "$IMAGE:1.0.0" docker
+
+      - name: Verify image runs
+        run: docker run --rm "$IMAGE:1.0.0"
+
+      - name: Save image as tar
+        run: docker save "$IMAGE:1.0.0" -o dummyapp-image.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DummyApp-docker
+          path: dummyapp-image.tar
+          if-no-files-found: error
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GHCR
+        run: |
+          docker push "$IMAGE:1.0.0"
+          digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE:1.0.0")
+          echo "Pushed: $digest"
+          echo "### Image pushed" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "$digest" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
