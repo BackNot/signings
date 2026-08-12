@@ -1,0 +1,12 @@
+[req]
+distinguished_name = dn
+prompt = no
+
+[dn]
+CN = Codific PoC Signing CA
+O = Codific
+
+[v3_ca]
+basicConstraints = critical, CA:TRUE, pathlen:0
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash

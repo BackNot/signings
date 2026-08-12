@@ -75,6 +75,11 @@ code-signing experiments.
   The pushed digest is printed in the workflow run summary. (To sign a
   purely local file instead, `cosign sign-blob` works on the saved tar.)
 
+## Internal CA for the PoC
+
+`ca/` contains a minimal one-tier CA for issuing code-signing certificates
+from CSRs exported by a centralized signing service — see [ca/README.md](ca/README.md).
+
 ## Getting the artifacts
 
 Each workflow runs on pushes to `main` touching its files, or manually via

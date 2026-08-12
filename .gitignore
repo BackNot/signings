@@ -4,5 +4,6 @@ out/
 build/
 .gradle/
 local.properties
+ca/state/
 *.user
 .DS_Store
