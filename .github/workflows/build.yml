@@ -59,7 +59,7 @@ jobs:
           if-no-files-found: error
          
       - name: submit signing request
-        uses: signpath/github-action-submit-signing-request@v2
+        uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'fe73d942-c95c-4209-9ebb-fa37622c5500'
